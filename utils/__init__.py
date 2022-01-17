@@ -1,1 +1,1 @@
-from .utils import get_text_and_locations
+from .utils import get_words, get_neighbors
