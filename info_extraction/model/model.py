@@ -7,7 +7,7 @@ from einops import rearrange
 class Attention(nn.Module):
     def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0.):
         super().__init__()
-        inner_dim = dim_head *  heads
+        inner_dim = dim_head * heads
         project_out = not (heads == 1 and dim_head == dim)
 
         self.heads = heads
@@ -36,11 +36,10 @@ class NeighborEncoder(nn.Module):
         super().__init__()
         self.atn = Attention(dim, heads, dim_head, dropout)
         self.fc = nn.Sequential(
-            nn.Linear(2*dim, 4*dim),
+            nn.Linear(dim, 2*dim),
             nn.Dropout(dropout),
             nn.ReLU(inplace=True),
-            nn.Linear(4*dim, dim)
-            
+            nn.Linear(2*dim, dim)
         )
         self.pool = nn.AdaptiveMaxPool1d(1)
         
@@ -48,7 +47,7 @@ class NeighborEncoder(nn.Module):
         x = self.atn(input)
         x = self.fc(x)
         x = x.transpose(-1, -2)
-        x = self.pool(x).transpose(-1, -2)
+        x = self.pool(x).transpose(-1, -2).squeeze(1)
         
         return x
     
@@ -72,12 +71,12 @@ class NeighborEmbedder(nn.Module):
         return emb
     
 class Scorer(nn.Module):
-    def __init__(self, emb_dim, vocab_size, dropout=0.):
+    def __init__(self, emb_dim, vocab_size, n_fields, dropout=0.):
         super().__init__()
-        self.field_embedder = nn.Linear(3, emb_dim)
+        self.field_embedder = nn.Linear(n_fields, emb_dim)
         self.cand_pos_embedder = nn.Linear(2, emb_dim)
-        self.neigh_embedder = NeighborEmbedder(vocab_size, emb_dim, dropout)
-        self.neighbor_encoder = NeighborEncoder(emb_dim * 2, dropout)
+        self.neigh_embedder = NeighborEmbedder(vocab_size, emb_dim, dropout=dropout)
+        self.neighbor_encoder = NeighborEncoder(emb_dim * 2, dropout=dropout)
         self.fc = nn.Linear(3 * emb_dim, emb_dim)
         self.sim = nn.CosineSimilarity(dim=1, eps=1e-6)
         
