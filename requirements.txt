@@ -1,0 +1,7 @@
+torch==1.9.1
+PIL
+opencv-python
+sklearn
+pytesseract
+einops
+wandb
